@@ -81,7 +81,25 @@ def generate():
     
     img = qr.make_image(fill_color="black", back_color="white")
     
-    # Convert image to base64 string
+    # Save QR code to local file system
+    qr_id = str(uuid.uuid4())
+    image_path = os.path.join(QR_IMAGES_DIR, f"{qr_id}.png")
+    img.save(image_path)
+    image_url = f"/qr_images/{qr_id}.png"
+    
+    # Save QR code data to user's list
+    username = session['username']
+    qr_data = {
+        'link': data,
+        'image_url': image_url,
+        'created_at': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    if username not in qr_codes:
+        qr_codes[username] = {}
+    qr_codes[username][qr_id] = qr_data
+    save_data(QR_CODES_FILE, qr_codes)
+    
+    # Convert image to base64 string for display
     buffered = BytesIO()
     img.save(buffered, format="PNG")
     img_str = base64.b64encode(buffered.getvalue()).decode()
