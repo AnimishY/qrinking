@@ -7,6 +7,7 @@ import datetime
 from functools import wraps
 from PIL import Image, ImageDraw, ImageFont
 import io
+import base64
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -52,7 +53,64 @@ def login_required(f):
 
 @app.route('/')
 def index():
-    return "Hello, this is your Flask application running on Render!"
+    return """
+    <h1>Welcome to QR Code Generator</h1>
+    <p>Use the following routes:</p>
+    <ul>
+        <li><a href="/qr-form">Create a QR Code</a></li>
+        <li><a href="/about">About this app</a></li>
+    </ul>
+    """
+
+@app.route('/qr-form')
+def qr_form():
+    return """
+    <h1>Generate QR Code</h1>
+    <form action="/generate" method="post">
+        <label for="data">Enter text or URL:</label><br>
+        <input type="text" id="data" name="data" required><br><br>
+        <button type="submit">Generate QR Code</button>
+    </form>
+    """
+
+@app.route('/generate', methods=['POST'])
+def generate():
+    data = request.form.get('data', '')
+    if not data:
+        return "No data provided", 400
+    
+    # Generate QR code
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(data)
+    qr.make(fit=True)
+    
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    # Convert image to base64 string
+    buffered = BytesIO()
+    img.save(buffered, format="PNG")
+    img_str = base64.b64encode(buffered.getvalue()).decode()
+    
+    return f"""
+    <h1>Your QR Code</h1>
+    <p>QR code for: {data}</p>
+    <img src="data:image/png;base64,{img_str}" alt="QR Code">
+    <p><a href="/">Back to home</a></p>
+    """
+
+@app.route('/about')
+def about():
+    return """
+    <h1>About QR Code Generator</h1>
+    <p>This simple web application allows you to generate QR codes for text or URLs.</p>
+    <p>Built with Flask and deployed on Render.</p>
+    <p><a href="/">Back to home</a></p>
+    """
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -252,4 +310,5 @@ def serve_qr_image(filename):
     return send_from_directory(QR_IMAGES_DIR, filename)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
