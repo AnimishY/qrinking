@@ -52,9 +52,7 @@ def login_required(f):
 
 @app.route('/')
 def index():
-    if 'username' in session:
-        return redirect(url_for('dashboard'))
-    return render_template('index.html')
+    return "Hello, this is your Flask application running on Render!"
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
