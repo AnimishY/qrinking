@@ -3,78 +3,173 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - QR Code Generator</title>
+    <title>Dashboard - QR Code & URL Shortener</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #6B73FF 0%, #000DFF 100%);
+        }
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            border: none;
+        }
+        .qr-image {
+            max-width: 150px;
+            margin: 0 auto;
+        }
+        .btn-primary {
+            background-color: #4361ee;
+            border-color: #4361ee;
+        }
+        .btn-primary:hover {
+            background-color: #3a56e4;
+            border-color: #3a56e4;
+        }
+        .form-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .card-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .copy-btn {
+            cursor: pointer;
+        }
+        .short-url {
+            display: flex;
+            align-items: center;
+            padding: 5px 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .short-url span {
+            flex-grow: 1;
+            font-size: 14px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
         <div class="container">
-            <a class="navbar-brand" href="#">QR Code Generator</a>
+            <a class="navbar-brand" href="/">QR & URL Tool</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/dashboard">Dashboard</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logout">Logout</a>
                     </li>
                 </ul>
             </div>
         </div>
     </nav>
 
-    <div class="container mt-4">
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h4>Generate QR Code</h4>
-                    </div>
-                    <div class="card-body">
-                        <form method="POST" action="{{ url_for('generate') }}">
-                            <div class="mb-3">
-                                <label for="data" class="form-label">Enter text or URL:</label>
-                                <input type="text" class="form-control" id="data" name="data" placeholder="https://example.com" required>
-                            </div>
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-success">Generate QR Code</button>
-                            </div>
-                        </form>
-                    </div>
+    <div class="container">
+        <h1 class="mb-4">Dashboard</h1>
+        
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="form-container">
+                    <h3>Create QR Code</h3>
+                    <form action="/generate-qr" method="post">
+                        <div class="mb-3">
+                            <label for="link" class="form-label">Website URL or Text</label>
+                            <input type="text" class="form-control" id="link" name="link" placeholder="Enter a URL or text" required>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="shorten" name="shorten">
+                            <label class="form-check-label" for="shorten">Also create shortened URL</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Generate QR Code</button>
+                    </form>
                 </div>
-
-                <h3 class="mb-3">Your QR Codes</h3>
-                
-                {% if qr_codes %}
-                    <div class="row">
-                        {% for qr in qr_codes %}
-                            <div class="col-md-4 mb-4">
-                                <div class="card h-100">
-                                    <img src="{{ qr.image_url }}" class="card-img-top" alt="QR Code">
-                                    <div class="card-body">
-                                        <h5 class="card-title">URL:</h5>
-                                        <p class="card-text text-truncate">{{ qr.link }}</p>
-                                        <p class="card-text"><small class="text-muted">Created: {{ qr.created_at }}</small></p>
-                                        <a href="{{ qr.link }}" target="_blank" class="btn btn-primary btn-sm me-2">Visit Link</a>
-                                        <a href="{{ url_for('delete_qr', qr_id=qr.id) }}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this QR code?')">Delete</a>
-                                        <div class="download-options mt-2">
-                                            <a href="{{ qr.download_url }}" class="btn btn-primary btn-sm">Download QR Code</a>
-                                            <a href="{{ qr.download_with_caption_url }}" class="btn btn-secondary btn-sm">Download with Caption</a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="alert alert-info">
-                        You haven't created any QR codes yet.
-                    </div>
-                {% endif %}
             </div>
         </div>
+        
+        {% if qr_codes %}
+        <h2 class="mb-3">Your QR Codes</h2>
+        <div class="row">
+            {% for qr in qr_codes %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="text-center mb-3">
+                            <img src="{{ qr.image_url }}" alt="QR Code" class="qr-image img-fluid">
+                        </div>
+                        <h5 class="card-title">{{ qr.display_url }}</h5>
+                        <p class="card-text"><small class="text-muted">Created: {{ qr.created_at }}</small></p>
+                        
+                        {% if qr.short_url %}
+                        <div class="short-url">
+                            <span id="short-url-{{ qr.id }}">{{ qr.short_url }}</span>
+                            <i class="fas fa-copy copy-btn ms-2" onclick="copyToClipboard('short-url-{{ qr.id }}')" title="Copy short URL"></i>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="card-actions mt-3">
+                            <a href="{{ qr.download_url }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                            <a href="{{ qr.download_with_caption_url }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-download"></i> With Caption
+                            </a>
+                            <a href="/delete-qr/{{ qr.id }}" class="btn btn-sm btn-outline-danger" 
+                               onclick="return confirm('Are you sure you want to delete this QR code?')">
+                                <i class="fas fa-trash"></i> Delete
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <p>You haven't created any QR codes yet. Use the form above to get started!</p>
+        </div>
+        {% endif %}
     </div>
 
+    <script>
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            
+            navigator.clipboard.writeText(text).then(function() {
+                // Show feedback
+                const originalBg = element.style.backgroundColor;
+                element.style.backgroundColor = "#d4edda";
+                setTimeout(() => {
+                    element.style.backgroundColor = originalBg;
+                }, 1000);
+            }, function() {
+                console.error('Failed to copy text');
+            });
+        }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

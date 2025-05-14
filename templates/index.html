@@ -3,21 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Code Generator</title>
+    <title>QR Code Generator & URL Shortener</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        .hero-section {
+            background: linear-gradient(135deg, #6B73FF 0%, #000DFF 100%);
+            color: white;
+            padding: 6rem 0;
+            border-radius: 0 0 50px 50px;
+            margin-bottom: 3rem;
+        }
+        .feature-card {
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            height: 100%;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            color: #4361ee;
+        }
+        .btn-primary {
+            background-color: #4361ee;
+            border-color: #4361ee;
+            padding: 0.75rem 2rem;
+            border-radius: 50px;
+            font-weight: 600;
+        }
+        .btn-primary:hover {
+            background-color: #3a56e4;
+            border-color: #3a56e4;
+        }
+        .btn-outline-light {
+            border-radius: 50px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+        }
+        .cta-section {
+            background-color: #4361ee;
+            border-radius: 15px;
+            padding: 3rem;
+            margin: 3rem auto;
+            max-width: 100%;
+        }
+        footer {
+            background-color: #212529;
+            color: #ffffff;
+            padding: 3rem 0;
+        }
+        .qr-example {
+            max-width: 200px;
+            margin: 0 auto;
+        }
+    </style>
 </head>
 <body>
-    <div class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-md-8 text-center">
-                <h1>QR Code Generator</h1>
-                <p class="lead">Create and store QR codes for your links</p>
-                <div class="mt-4">
-                    <a href="{{ url_for('login') }}" class="btn btn-primary me-2">Login</a>
-                    <a href="{{ url_for('signup') }}" class="btn btn-outline-primary">Sign Up</a>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-transparent position-absolute w-100">
+            <div class="container">
+                <a class="navbar-brand fw-bold" href="/">QR & URL Tool</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/about">About</a>
+                        </li>
+                        {% if 'username' in session %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="/dashboard">Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/logout">Logout</a>
+                        </li>
+                        {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="/login">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/signup">Sign Up</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <section class="hero-section">
+        <div class="container text-center">
+            <h1 class="display-3 fw-bold mb-4">Generate QR Codes & Shorten URLs</h1>
+            <p class="lead mb-5">Create QR codes for websites, text, and more. Plus, shorten long URLs into easy-to-share links!</p>
+            <div class="d-flex justify-content-center gap-3">
+                {% if 'username' in session %}
+                <a href="/dashboard" class="btn btn-light btn-lg">Go to Dashboard</a>
+                {% else %}
+                <a href="/signup" class="btn btn-light btn-lg">Get Started</a>
+                <a href="/login" class="btn btn-outline-light btn-lg">Login</a>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <section class="container mb-5">
+        <h2 class="text-center mb-5">Our Features</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card feature-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon">
+                            <i class="fas fa-qrcode"></i>
+                        </div>
+                        <h3>QR Code Generator</h3>
+                        <p>Create QR codes for websites, text, contact information, and more. Download in various formats.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card feature-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon">
+                            <i class="fas fa-link"></i>
+                        </div>
+                        <h3>URL Shortener</h3>
+                        <p>Convert long URLs into short, memorable links that are easy to share on social media or elsewhere.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card feature-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h3>Tracking & Management</h3>
+                        <p>Keep track of all your QR codes and shortened URLs in one convenient dashboard.</p>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </section>
+
+    <section class="container cta-section text-center text-white">
+        <h2 class="mb-4">Ready to get started?</h2>
+        <p class="mb-4">Create an account now to generate QR codes and shortened URLs for free!</p>
+        {% if 'username' in session %}
+        <a href="/dashboard" class="btn btn-light btn-lg">Go to Dashboard</a>
+        {% else %}
+        <a href="/signup" class="btn btn-light btn-lg">Sign Up For Free</a>
+        {% endif %}
+    </section>
+
+    <footer class="text-center">
+        <div class="container">
+            <p>© 2023 QR Code Generator & URL Shortener. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

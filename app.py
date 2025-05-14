@@ -11,6 +11,8 @@ import io
 import base64
 from io import BytesIO
 from dotenv import load_dotenv
+import random
+import string
 
 # Load environment variables
 load_dotenv()
@@ -84,13 +86,19 @@ def generate_qr_image(link, with_caption=False):
     qr.add_data(link)
     qr.make(fit=True)
     
+    # Create the QR code image
     img = qr.make_image(fill_color="black", back_color="white")
+    
+    # Convert to RGB mode to ensure compatibility
+    if img.mode != 'RGB':
+        img = img.convert('RGB')
     
     if with_caption:
         # Create a new image with extra space for caption
         width, height = img.size
         new_img = Image.new('RGB', (width, height + 40), color='white')
-        new_img.paste(img, (0, 0))
+        # Use the box parameter to properly paste the image
+        new_img.paste(img, (0, 0, width, height))
         
         # Add caption
         draw = ImageDraw.Draw(new_img)
@@ -118,6 +126,30 @@ def get_qr_as_base64(link):
     img_str = base64.b64encode(buffered.getvalue()).decode()
     return f"data:image/png;base64,{img_str}"
 
+# Function to generate a random short code
+def generate_short_code(length=6):
+    chars = string.ascii_letters + string.digits
+    return ''.join(random.choice(chars) for _ in range(length))
+
+# Function to check if a short code exists
+def short_code_exists(short_code):
+    query = "SELECT COUNT(*) as count FROM qr_codes WHERE short_code = %s"
+    result = execute_query(query, (short_code,), fetch=True)
+    return result[0]['count'] > 0
+
+# Function to get a unique short code
+def get_unique_short_code():
+    while True:
+        short_code = generate_short_code()
+        if not short_code_exists(short_code):
+            return short_code
+
+# Function to get original URL from short code
+def get_url_from_short_code(short_code):
+    query = "SELECT link FROM qr_codes WHERE short_code = %s"
+    result = execute_query(query, (short_code,), fetch=True)
+    return result[0]['link'] if result else None
+
 # User functions
 def get_user(username):
     query = "SELECT * FROM users WHERE username = %s"
@@ -134,13 +166,16 @@ def verify_user(username, password):
     return len(users) > 0
 
 # QR code functions
-def save_qr_code(username, qr_id, link):
+def save_qr_code(username, qr_id, link, short_code=None):
+    if not short_code:
+        short_code = get_unique_short_code()
+    
     query = """
-    INSERT INTO qr_codes (id, username, link, created_at) 
-    VALUES (%s, %s, %s, %s)
+    INSERT INTO qr_codes (id, username, link, short_code, created_at) 
+    VALUES (%s, %s, %s, %s, %s)
     """
     now = datetime.datetime.now()
-    return execute_query(query, (qr_id, username, link, now))
+    return execute_query(query, (qr_id, username, link, short_code, now))
 
 def get_user_qr_codes(username):
     query = "SELECT * FROM qr_codes WHERE username = %s ORDER BY created_at DESC"
@@ -258,10 +293,17 @@ def dashboard():
             # Extract URL for display (remove protocol for cleaner UI)
             display_url = qr_data['link'].replace('https://', '').replace('http://', '')
             
+            # Add short URL if available
+            short_url = None
+            if 'short_code' in qr_data and qr_data['short_code']:
+                short_url = url_for('redirect_short_url', short_code=qr_data['short_code'], _external=True)
+            
             user_qr_codes.append({
                 'id': qr_data['id'],
                 'link': qr_data['link'],
                 'display_url': display_url,
+                'short_code': qr_data['short_code'] if 'short_code' in qr_data else None,
+                'short_url': short_url,
                 'image_url': url_for('serve_qr_image', qr_id=qr_data['id']),
                 'created_at': created_date,
                 'download_url': url_for('download_qr', qr_id=qr_data['id'], caption_type='no-caption'),
@@ -279,8 +321,13 @@ def generate_qr():
     # Generate unique ID for the QR code
     qr_id = str(uuid.uuid4())
     
-    # Save to database (without storing the image)
-    save_qr_code(username, qr_id, link)
+    # Generate short URL code if shorten option is selected
+    short_code = None
+    if 'shorten' in request.form and request.form['shorten'] == 'on':
+        short_code = get_unique_short_code()
+    
+    # Save to database with optional short code
+    save_qr_code(username, qr_id, link, short_code)
     
     return redirect(url_for('dashboard'))
 
@@ -360,6 +407,20 @@ def serve_qr_image(qr_id):
         if connection.is_connected():
             cursor.close()
             connection.close()
+
+# New route to handle short URL redirects
+@app.route('/s/<short_code>')
+def redirect_short_url(short_code):
+    original_url = get_url_from_short_code(short_code)
+    
+    if original_url:
+        # Make sure URL has scheme for proper redirect
+        if not original_url.startswith(('http://', 'https://')):
+            original_url = 'https://' + original_url
+        return redirect(original_url)
+    else:
+        flash('Short URL not found')
+        return redirect(url_for('index'))
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
